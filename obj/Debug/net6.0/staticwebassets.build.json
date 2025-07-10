@@ -1,0 +1,58 @@
+{
+  "Version": 1,
+  "Hash": "IizPhSw8+Kb76zyFWDmeSCGlTyYeAZ4ur318bCCyXwg=",
+  "Source": "RentCar",
+  "BasePath": "_content/RentCar",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "RentCar\\wwwroot",
+      "Source": "RentCar",
+      "ContentRoot": "C:\\Users\\yoseph\\source\\repos\\RentCar\\wwwroot\\",
+      "BasePath": "_content/RentCar",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\yoseph\\source\\repos\\RentCar\\wwwroot\\images\\cars\\9c901b44-0264-493e-821b-c069d27e3481.jpg",
+      "SourceId": "RentCar",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\yoseph\\source\\repos\\RentCar\\wwwroot\\",
+      "BasePath": "_content/RentCar",
+      "RelativePath": "images/cars/9c901b44-0264-493e-821b-c069d27e3481.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\images\\cars\\9c901b44-0264-493e-821b-c069d27e3481.jpg"
+    },
+    {
+      "Identity": "C:\\Users\\yoseph\\source\\repos\\RentCar\\wwwroot\\images\\cars\\f4bc95ec-49ae-41be-84bb-744b2495a257.jpg",
+      "SourceId": "RentCar",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\yoseph\\source\\repos\\RentCar\\wwwroot\\",
+      "BasePath": "_content/RentCar",
+      "RelativePath": "images/cars/f4bc95ec-49ae-41be-84bb-744b2495a257.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\images\\cars\\f4bc95ec-49ae-41be-84bb-744b2495a257.jpg"
+    }
+  ]
+}

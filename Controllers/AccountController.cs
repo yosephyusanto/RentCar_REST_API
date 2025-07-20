@@ -122,6 +122,29 @@ namespace RentCar.Controllers
             return BadRequest(result.Errors);
         }
 
+        [HttpPost("remove_role")]
+        public async Task<IActionResult> RemoveRole([FromBody] UserRole model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if(user == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            if(!await _userManager.IsInRoleAsync(user, model.Role))
+            {
+                return BadRequest("User does not have the specified role");
+            }
+
+            var result = await _userManager.RemoveFromRoleAsync(user, model.Role);
+            if (result.Succeeded)
+            {
+                return Ok(new { message = "Role removed successfully" });
+            }
+
+            return BadRequest(result.Errors);
+        }
+
 
         [HttpDelete("delete-user")]
         public async Task<IActionResult> DeleteUser([FromQuery] string email)

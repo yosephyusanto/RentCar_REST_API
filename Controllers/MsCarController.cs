@@ -6,9 +6,11 @@ using RentCar.Models;
 using RouteAttribute = Microsoft.AspNetCore.Mvc.RouteAttribute;
 using Microsoft.EntityFrameworkCore;
 using RentCar.Models.Request;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RentCar.Controllers
 {
+    [Authorize(Roles = "employee")]
     [Route("api/[controller]")]
     [ApiController]
     public class MsCarController : ControllerBase
@@ -21,6 +23,8 @@ namespace RentCar.Controllers
             _hostEnvironment = hostEnvironment;
         }
 
+        [AllowAnonymous] 
+        [Authorize(Roles = "customer,employee")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MsCarCardResponse>>> Get() 
         {
@@ -61,7 +65,9 @@ namespace RentCar.Controllers
            
         }
 
-        [HttpGet("{id}")]
+        [AllowAnonymous]
+        [Authorize(Roles = "customer,employee")]
+        [HttpGet("{carId}")]
         public async Task<ActionResult<MsCarResponse>> GetById(string carId)
         {
             try
@@ -117,6 +123,7 @@ namespace RentCar.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Post([FromBody] CreateMsCarRequest request)
         {
             try

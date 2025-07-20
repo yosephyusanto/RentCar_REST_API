@@ -7,6 +7,7 @@ namespace RentCar.Models
     public class MsCar
     {
         [Key]
+        [MaxLength(36)]
         public string Car_id { get; set; }
         [MaxLength(200)]
         public string Name { get; set; }

@@ -26,41 +26,65 @@ namespace RentCar.Controllers
         [AllowAnonymous] 
         [Authorize(Roles = "customer,employee")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MsCarCardResponse>>> Get() 
+        public async Task<ActionResult<IEnumerable<MsCarCardResponse>>> Get(
+            [FromQuery] int page = 1,
+            [FromQuery] int limit = 16,
+            [FromQuery] string? order = null) 
         {
             try
             {
-                var listCars = await _context.MsCars
-               .Include(x => x.Images)
-               .Select(
-                   x => new MsCarCardResponse
-                   {
-                       Car_id = x.Car_id,
-                       Name = x.Name,
-                       Price_per_day = x.Price_per_day,
-                       Status = x.Status,
-                       ImageLink = x.Images.FirstOrDefault().Image_link ?? null,
-                   }
-               ).ToListAsync();
+                var query = _context.MsCars.Include(x => x.Images).AsQueryable();
 
-                var response = new ApiResponse<IEnumerable<MsCarCardResponse>>
+                // sorting pada FE hanya berdasarkan price (opsional)
+                if (!string.IsNullOrEmpty(order))
+                {
+                    query = order.ToLower() == "desc"
+                    ? query.OrderByDescending(x => x.Price_per_day)
+                    : query.OrderBy(x => x.Price_per_day);
+                }
+          
+                var totalItems = await query.CountAsync();
+
+                // pagination
+                var listCars = await query
+                 .Skip((page - 1) * limit)
+                 .Take(limit)
+                 .Select(x => new MsCarCardResponse
+                 {
+                     Car_id = x.Car_id,
+                     Name = x.Name,
+                     Price_per_day = x.Price_per_day,
+                     Status = x.Status,
+                     ImageLink = x.Images.FirstOrDefault().Image_link ?? null,
+                 })
+                 .ToListAsync();
+
+                var totalPages = (int)Math.Ceiling(totalItems / (double)limit);
+
+                var response = new PaginatedResponse<IEnumerable<MsCarCardResponse>>
                 {
                     StatusCode = StatusCodes.Status200OK,
                     RequestMethod = HttpContext.Request.Method,
                     Data = listCars,
+                    TotalItems = totalItems,
+                    TotalPages = totalPages,
+                    CurrentPage = page
                 };
 
                 return Ok(response);
             }
             catch(Exception ex)
             {
-                var response = new ApiResponse<string>
+                var errorResponse = new PaginatedResponse<string>
                 {
                     StatusCode = StatusCodes.Status500InternalServerError,
                     RequestMethod = HttpContext.Request.Method,
                     Data = ex.Message,
+                    TotalItems = 0,
+                    TotalPages = 0,
+                    CurrentPage = page,
                 };
-                return StatusCode(500, response);
+                return StatusCode(500, errorResponse);
             }
            
         }

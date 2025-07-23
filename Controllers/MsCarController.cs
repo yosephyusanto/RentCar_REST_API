@@ -7,6 +7,7 @@ using RouteAttribute = Microsoft.AspNetCore.Mvc.RouteAttribute;
 using Microsoft.EntityFrameworkCore;
 using RentCar.Models.Request;
 using Microsoft.AspNetCore.Authorization;
+using System.Xml.Linq;
 
 namespace RentCar.Controllers
 {
@@ -146,6 +147,63 @@ namespace RentCar.Controllers
             }
         }
 
+        [HttpGet("GetAllCompleteCarData")]
+        public async Task<ActionResult<IEnumerable<MsCarResponse>>> GetAll(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var query =  _context.MsCars.Include(x => x.Images).AsQueryable();
+                var totalItems = await query.CountAsync();
+
+                // pagination
+                var listCars = await query
+                    .Skip((page-1)*pageSize)
+                    .Take(pageSize)
+                    .Select(x => new MsCarResponse
+                    {
+                        Car_id = x.Car_id,
+                        Name = x.Name,
+                        Model = x.Model,
+                        Year = x.Year,
+                        License_plate = x.License_plate,
+                        Number_of_car_seats = x.Number_of_car_seats,
+                        Transmission = x.Transmission,
+                        Price_per_day = x.Price_per_day,
+                        Status = x.Status,
+                        Images = x.Images,
+                    })
+                    .ToListAsync();
+
+                var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+                var response = new PaginatedResponse<IEnumerable<MsCarResponse>>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = listCars,
+                    TotalItems = totalItems,
+                    TotalPages = totalPages,
+                    CurrentPage = page,
+                };
+                return Ok(response);
+            }
+            catch (Exception ex) 
+            {
+                var errorResponse = new PaginatedResponse<string>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = ex.Message,
+                    TotalItems = 0,
+                    TotalPages = 0,
+                    CurrentPage = page,
+                };
+                return StatusCode(500, errorResponse);
+            }
+        }
+
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Post([FromBody] CreateMsCarRequest request)
@@ -254,6 +312,16 @@ namespace RentCar.Controllers
                     Directory.CreateDirectory(uploadPath);
                 }
 
+                // cek maksimal jumlah gambar yang boleh di upload
+                if(files.Length > 5)
+                {
+                    var badRequest = new ApiResponse<string> {
+                        StatusCode = StatusCodes.Status400BadRequest,
+                        RequestMethod = HttpContext.Request.Method,
+                        Data = "You can only upload upto 5 images"
+                    };
+                    return BadRequest(badRequest);
+                }
 
                 // supaya efisien cukup fetch id sekali saja jangan di dalam looping
                 var latestImageId = await _context.MsCarImages
@@ -279,7 +347,7 @@ namespace RentCar.Controllers
                     if(file.Length > 0)
                     {
                         // validasi ekstensi file
-                        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
+                        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
                         var fileExtensions = Path.GetExtension(file.FileName).ToLower();
                         if (!allowedExtensions.Contains(fileExtensions))
                         {

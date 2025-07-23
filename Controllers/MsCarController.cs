@@ -249,7 +249,7 @@ namespace RentCar.Controllers
                     Number_of_car_seats = request.Number_of_car_seats,
                     Transmission = request.Transmission,
                     Price_per_day = request.Price_per_day,
-                    Status = false,
+                    Status = true,
                 };
 
                 _context.MsCars.Add(carData);   
@@ -419,6 +419,57 @@ namespace RentCar.Controllers
                     Data = ex.Message,
                 };
                 return BadRequest(response);
+            }
+        }
+
+
+        [HttpDelete("{carId}")]
+        public async Task<IActionResult> Delete(string carId)
+        {
+            try
+            {
+                // Check apakah car yang ingin dihapus ada atau tidak
+                var car = await _context.MsCars.FirstOrDefaultAsync(x => x.Car_id == carId);
+                if (car == null)
+                {
+                    var notFoundResponse = new ApiResponse<string>
+                    {
+                        StatusCode = StatusCodes.Status404NotFound,
+                        RequestMethod = HttpContext.Request.Method,
+                        Data = "Car not found"
+                    };
+                    return NotFound(notFoundResponse);
+                }
+
+                // Hapus images dari car yang akan dihapus
+                var carImages = await _context.MsCarImages.Where(x => x.Car_id == carId).ToListAsync();
+                if (carImages.Any())
+                {
+                    _context.MsCarImages.RemoveRange(carImages);
+                }
+
+                // Remove data car
+                _context.MsCars.Remove(car);
+                await _context.SaveChangesAsync();
+
+                var response = new ApiResponse<string>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = "Car deleted successfully"
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new ApiResponse<string>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = ex.Message
+                };
+                return StatusCode(500, errorResponse);
             }
         }
     }

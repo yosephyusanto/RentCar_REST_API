@@ -445,6 +445,9 @@ namespace RentCar.Controllers
                 var carImages = await _context.MsCarImages.Where(x => x.Car_id == carId).ToListAsync();
                 if (carImages.Any())
                 {
+                    await DeleteImageFiles(carImages);
+
+                    // remove image link dari SSMS
                     _context.MsCarImages.RemoveRange(carImages);
                 }
 
@@ -470,6 +473,52 @@ namespace RentCar.Controllers
                     Data = ex.Message
                 };
                 return StatusCode(500, errorResponse);
+            }
+        }
+
+        private async Task DeleteImageFiles(List<MsCarImages> images)
+        {
+            var imagePath = Path.Combine(_hostEnvironment.WebRootPath, "images", "cars");
+
+            foreach (var image in images)
+            {
+                try
+                {
+                    // Extract filename dari image_link (misal: /images/cars/filename.jpg)
+                    var fileName = Path.GetFileName(image.Image_link);
+
+                    // Validasi filename tidak kosong dan tidak mengandung path separator
+                    if (string.IsNullOrEmpty(fileName) || fileName.Contains(".."))
+                    {
+                        Console.WriteLine($"Invalid filename: {fileName}");
+                        continue;
+                    }
+
+                    var fullFilePath = Path.Combine(imagePath, fileName);
+
+                    // Double check path masih dalam folder yang diizinkan
+                    if (!fullFilePath.StartsWith(imagePath))
+                    {
+                        Console.WriteLine($"Path traversal attempt detected: {fullFilePath}");
+                        continue;
+                    }
+
+                    // Hapus file jika ada
+                    if (System.IO.File.Exists(fullFilePath))
+                    {
+                        System.IO.File.Delete(fullFilePath);
+                        Console.WriteLine($"Deleted image file: {fullFilePath}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Image file not found: {fullFilePath}");
+                    }
+                }
+                catch (Exception fileEx)
+                {
+                    // Log error tapi jangan stop proses delete
+                    Console.WriteLine($"Error deleting image file {image.Image_link}: {fileEx.Message}");
+                }
             }
         }
     }

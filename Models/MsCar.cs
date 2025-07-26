@@ -15,14 +15,17 @@ namespace RentCar.Models
         public string Model { get; set; }
         public int Year { get; set; }
         [MaxLength(50)]
-        public string License_plate { get; set; }
+        public string License_plate { get; set; } 
         public int Number_of_car_seats { get; set; }
         [MaxLength(100)]
         public string Transmission {  get; set; }
         public decimal Price_per_day { get; set; }
         public bool  Status { get; set; }
 
-        public ICollection<MsCarImages> Images { get; set; }
+        // Navigational Properties
+        public ICollection<MsCarImages> Images { get; set; } 
+        public ICollection<TrRental> Rentals { get; set; } = new List<TrRental>();
+        public ICollection<TrMaintenance> Maintenances { get; set; } = new List<TrMaintenance>();
 
     }
 }

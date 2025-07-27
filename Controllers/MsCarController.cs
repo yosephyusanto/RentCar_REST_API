@@ -36,6 +36,8 @@ namespace RentCar.Controllers
             {
                 var query = _context.MsCars.Include(x => x.Images).AsQueryable();
 
+                // filter berdasarkan pickup date, return date, dan car build year
+
                 // sorting pada FE hanya berdasarkan price (opsional)
                 if (!string.IsNullOrEmpty(order))
                 {

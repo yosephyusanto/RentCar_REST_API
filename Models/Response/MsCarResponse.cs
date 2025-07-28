@@ -14,9 +14,8 @@ namespace RentCar.Models.Response
        
         public string License_plate { get; set; }
         public int Number_of_car_seats { get; set; }
-      
         public string Transmission { get; set; }
-        public decimal Price_per_day { get; set; }
+        public decimal Price_per_day { get; set; } 
         public bool Status { get; set; }
 
         public ICollection<MsCarImages> Images { get; set; }

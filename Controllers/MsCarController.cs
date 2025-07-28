@@ -24,19 +24,42 @@ namespace RentCar.Controllers
             _hostEnvironment = hostEnvironment;
         }
 
-        [AllowAnonymous] 
+        [AllowAnonymous]
         [Authorize(Roles = "customer,employee")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MsCarCardResponse>>> Get(
+            [FromQuery] DateTime pickupDate,
+            [FromQuery] DateTime returnDate,
+            [FromQuery] int? carYear,
             [FromQuery] int page = 1,
-            [FromQuery] int limit = 16,
+            [FromQuery] int limit = 12,
             [FromQuery] string? order = null) 
         {
             try
             {
-                var query = _context.MsCars.Include(x => x.Images).AsQueryable();
+                var query = _context.MsCars
+                    .Include(x => x.Images)
+                    .Include(x => x.Rentals)
+                    .Where(x => x.Status == true) // Status mobil harus tersedia tidak sedang dalam maintenance
+                    .AsQueryable();
 
                 // filter berdasarkan pickup date, return date, dan car build year
+                if(pickupDate > returnDate)
+                {
+                    return BadRequest("pickupDate must not exceed return Date");
+                }
+                if(pickupDate == returnDate)
+                {
+                    return BadRequest("cannot pickup and return car in the same day, minimum rent is 1 day");
+                }
+                if (pickupDate < DateTime.Now.Date || returnDate < DateTime.Now.Date) //.Date hanya mempertimbangkan tanggal tanpa jam menit dan detik
+                {
+                    return BadRequest("invalid date");
+                }
+                query = query.Where(x => x.Rentals.All(r => returnDate < r.Rental_date.Date || pickupDate > r.Return_date.Date));
+
+                if(carYear != null) query = query.Where(x => x.Year == carYear);
+
 
                 // sorting pada FE hanya berdasarkan price (opsional)
                 if (!string.IsNullOrEmpty(order))
@@ -95,7 +118,9 @@ namespace RentCar.Controllers
         [AllowAnonymous]
         [Authorize(Roles = "customer,employee")]
         [HttpGet("{carId}")]
-        public async Task<ActionResult<MsCarResponse>> GetById(string carId)
+        public async Task<ActionResult<MsCarResponse>> GetById(string carId,
+            [FromQuery] DateTime pickupDate,
+            [FromQuery] DateTime returnDate)
         {
             try
             {
@@ -128,11 +153,20 @@ namespace RentCar.Controllers
                     return NotFound(notFoundResponse);
                 }
 
-                var response = new ApiResponse<MsCarResponse>
+                // Hitung total price
+                int rentalDays = (returnDate - pickupDate).Days;
+                var totalPrice = rentalDays * car.Price_per_day;
+
+                var response = new ApiResponse<object>
                 {
                     StatusCode = StatusCodes.Status200OK,
                     RequestMethod = HttpContext.Request.Method,
-                    Data = car,
+                    Data = new
+                    {
+                        Car = car,
+                        TotalPrice = totalPrice,
+                        RentalDays = rentalDays,
+                    },
                 };
 
                 return Ok(response);

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using RentCar.Data;
@@ -174,6 +175,89 @@ namespace RentCar.Controllers
                     TotalItems = 0,
                     TotalPages = 0,
                     CurrentPage = page
+                };
+                return StatusCode(500, errorResponse);
+            }
+        }
+
+        // payment endpoint
+        [Authorize(Roles = "customer")]
+        [HttpPost("{rentalId}/payment")]
+        public async Task<IActionResult> ProcessPayment(string rentalId, [FromBody] string paymentMethod)
+        {
+            try
+            {
+                var customerId = User.FindFirst("UserId")?.Value;
+                if (string.IsNullOrEmpty(customerId))
+                {
+                    return Unauthorized("Customer not found");
+                }
+
+                var rental = await _context.TrRentals
+                    .FirstOrDefaultAsync(r => r.Rental_id == rentalId && r.Customer_id == customerId);
+
+                if(rental == null)
+                {
+                    return NotFound("rental not found");
+                }
+                if (rental.Payment_status)
+                {
+                    return BadRequest("Rental already paid");
+                }
+
+                var latestPaymentId = _context.LtPayments
+                    .OrderByDescending(p => p.Payment_Id)
+                    .Select(p => p.Payment_Id)
+                    .FirstOrDefault();
+
+                int newPaymentIdNumber;
+
+                if (latestPaymentId == null)
+                {
+                    newPaymentIdNumber = 1;
+                }
+                else
+                {
+                    var lastNumber = int.Parse(latestPaymentId.Substring(3));
+                    newPaymentIdNumber = lastNumber + 1;
+                }
+
+                var newPaymentId = $"PY{newPaymentIdNumber:D3}";
+
+                decimal totalPrice = await _context.TrRentals
+                    .Where(r => r.Rental_id == rentalId)
+                    .Select(r => r.Total_price)
+                    .FirstOrDefaultAsync();
+
+                var newPayment = new LtPayment
+                {
+                    Payment_Id = newPaymentId,
+                    Rental_id = rentalId,
+                    Amount = totalPrice,
+                    Payment_date = DateTime.Now,
+                    Payment_method = paymentMethod,
+                };
+
+                _context.LtPayments.Add(newPayment);
+
+                var response = new ApiResponse<string>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = "Success Payment"
+                };
+
+                rental.Payment_status = true;
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new ApiResponse<string>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = ex.Message,
                 };
                 return StatusCode(500, errorResponse);
             }

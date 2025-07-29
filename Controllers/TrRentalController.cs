@@ -111,20 +111,72 @@ namespace RentCar.Controllers
             }
         }
 
-        //[Authorize(Roles = "customer")]
-        //[HttpGet("my-rentals")]
-        //public async Task<ActionResult<IEnumerable<RentalHistoryResponse>>> GetMyRentals(
-        //    [FromQuery] int page = 1,
-        //    [FromQuery] int limit = 10)
-        //{
-        //    try
-        //    {
+        [Authorize(Roles = "customer")]
+        [HttpGet("my-rentals")]
+        public async Task<ActionResult<IEnumerable<RentalHistoryResponse>>> GetMyRentals(
+            [FromQuery] int page = 1,
+            [FromQuery] int limit = 10)
+        {
+            try
+            {
+                var customerId = User.FindFirst("UserId")?.Value;
+                if (string.IsNullOrEmpty(customerId))
+                {
+                    return Unauthorized("Customer not found");
+                }
 
-        //    }
-        //    catch (Exception ex)
-        //    {
+                // eager loading or join  
+                var query = _context.TrRentals
+                    .Include(r => r.Car)
+                    .Where(r => r.Customer_id == customerId)
+                    .OrderByDescending(r => r.Rental_date);
 
-        //    }
-        //}
+                var totalItems = await query.CountAsync();
+
+                // query already contain all join data so, no need to using async because this command will not be a query to database
+                var rentals = query
+                    .Skip((page - 1) * limit)
+                    .Take(limit)
+                    .Select(r => new RentalHistoryResponse
+                    {
+                        RentalId = r.Rental_id,
+                        CarName = r.Car.Name,
+                        CarModel = r.Car.Model,
+                        CarYear = r.Car.Year,
+                        RentalDate = r.Rental_date,
+                        ReturnDate = r.Return_date,
+                        TotalDay = (r.Return_date.Day - r.Rental_date.Day),
+                        TotalPrice = r.Total_price,
+                        PaymentStatus = r.Payment_status,
+                    });
+
+                var totalPages = (int)Math.Ceiling(totalItems / (double)limit);
+
+                var response = new PaginatedResponse<IEnumerable<RentalHistoryResponse>>
+                {
+                    StatusCode = StatusCodes.Status200OK,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = rentals,
+                    TotalItems = totalItems,
+                    TotalPages = totalPages,
+                    CurrentPage = page,
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new PaginatedResponse<string>
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    RequestMethod = HttpContext.Request.Method,
+                    Data = ex.Message,
+                    TotalItems = 0,
+                    TotalPages = 0,
+                    CurrentPage = page
+                };
+                return StatusCode(500, errorResponse);
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@
         public DateTime RentalDate { get; set; }
         public DateTime ReturnDate { get; set; }
         public int TotalDay { get; set; }
+        public decimal PricePerDay { get; set; }
         public decimal TotalPrice { get; set; }
         public bool PaymentStatus { get; set; }
     }

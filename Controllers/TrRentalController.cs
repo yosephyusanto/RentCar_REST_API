@@ -146,7 +146,8 @@ namespace RentCar.Controllers
                         CarYear = r.Car.Year,
                         RentalDate = r.Rental_date,
                         ReturnDate = r.Return_date,
-                        TotalDay = (r.Return_date.Day - r.Rental_date.Day),
+                        TotalDay = (r.Return_date - r.Rental_date).Days,
+                        PricePerDay = r.Car.Price_per_day, 
                         TotalPrice = r.Total_price,
                         PaymentStatus = r.Payment_status,
                     });

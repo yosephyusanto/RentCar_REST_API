@@ -241,6 +241,12 @@ namespace RentCar.Controllers
 
                 _context.LtPayments.Add(newPayment);
 
+
+                rental.Payment_status = true;
+
+                // PENTING: SIMPAN PERUBAHAN KE DATABASE
+                await _context.SaveChangesAsync();
+
                 var response = new ApiResponse<string>
                 {
                     StatusCode = StatusCodes.Status200OK,
@@ -248,7 +254,6 @@ namespace RentCar.Controllers
                     Data = "Success Payment"
                 };
 
-                rental.Payment_status = true;
 
                 return Ok(response);
             }

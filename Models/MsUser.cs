@@ -5,7 +5,6 @@ namespace RentCar.Models
 {
     public class MsUser : IdentityUser
     {
-        [Key]
         [MaxLength(200)]
         public string FullName { get; set; }
         [MaxLength(500)]

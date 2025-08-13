@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using RentCar.Models.Request;
 using Microsoft.AspNetCore.Authorization;
 using System.Xml.Linq;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 
 namespace RentCar.Controllers
 {
@@ -17,11 +19,13 @@ namespace RentCar.Controllers
     public class MsCarController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _hostEnvironment;  
-        public MsCarController(AppDbContext context, IWebHostEnvironment hostEnvironment) 
+        private readonly IWebHostEnvironment _hostEnvironment;
+        private readonly Cloudinary _cloudinary;
+        public MsCarController(AppDbContext context, IWebHostEnvironment hostEnvironment, Cloudinary cloudinary) 
         { 
             _context = context;
             _hostEnvironment = hostEnvironment;
+            _cloudinary = cloudinary;
         }
 
         [AllowAnonymous]
@@ -408,13 +412,17 @@ namespace RentCar.Controllers
                             return BadRequest(fileSizeResponse);
                         }
 
-                        var fileName = Guid.NewGuid().ToString() + fileExtensions;
-                        var filePath = Path.Combine(uploadPath, fileName);
-                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        // upload car image to Cloudinary
+                        await using var stream = file.OpenReadStream();
+                        var uploadParams = new ImageUploadParams
                         {
-                            await file.CopyToAsync(stream);
-                        }
+                            File = new FileDescription(file.FileName, stream),
+                            Folder = "rentcar/cars"
+                        };
 
+                        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+                        // simpan ke DB
                         var newImageId = $"IMG{newImageIdNumber:D3}";
                         newImageIdNumber++;
 
@@ -422,7 +430,8 @@ namespace RentCar.Controllers
                         {
                             Car_id = carId,
                             Image_car_id = newImageId,
-                            Image_link = $"/images/cars/{fileName}"
+                            Image_link = uploadResult.SecureUrl.ToString(),
+                            PublicId = uploadResult.PublicId, // bisa dipakai untuk delete
                         };
 
                         _context.MsCarImages.Add(imageData);
@@ -514,41 +523,16 @@ namespace RentCar.Controllers
 
         private async Task DeleteImageFiles(List<MsCarImages> images)
         {
-            var imagePath = Path.Combine(_hostEnvironment.WebRootPath, "images", "cars");
-
             foreach (var image in images)
             {
                 try
                 {
-                    // Extract filename dari image_link (misal: /images/cars/filename.jpg)
-                    var fileName = Path.GetFileName(image.Image_link);
+                    if (string.IsNullOrEmpty(image.PublicId)) continue;
+                    
+                    var deletionParams = new DeletionParams(image.PublicId);
+                    var result = await _cloudinary.DestroyAsync(deletionParams);
 
-                    // Validasi filename tidak kosong dan tidak mengandung path separator
-                    if (string.IsNullOrEmpty(fileName) || fileName.Contains(".."))
-                    {
-                        Console.WriteLine($"Invalid filename: {fileName}");
-                        continue;
-                    }
-
-                    var fullFilePath = Path.Combine(imagePath, fileName);
-
-                    // Double check path masih dalam folder yang diizinkan
-                    if (!fullFilePath.StartsWith(imagePath))
-                    {
-                        Console.WriteLine($"Path traversal attempt detected: {fullFilePath}");
-                        continue;
-                    }
-
-                    // Hapus file jika ada
-                    if (System.IO.File.Exists(fullFilePath))
-                    {
-                        System.IO.File.Delete(fullFilePath);
-                        Console.WriteLine($"Deleted image file: {fullFilePath}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Image file not found: {fullFilePath}");
-                    }
+                    Console.WriteLine($"Deleted {image.PublicId} from Cloudinary: {result.Result}");
                 }
                 catch (Exception fileEx)
                 {

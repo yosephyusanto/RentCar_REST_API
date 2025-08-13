@@ -70,7 +70,7 @@ namespace RentCar.Controllers
 
                 var token = new JwtSecurityToken(
                     issuer: _configuration["Jwt:Issuer"],
-                    expires: DateTime.Now.AddMinutes(double.Parse(_configuration["Jwt:ExpiryMinutes"]!)),
+                    expires: DateTime.Now.AddMinutes(double.Parse(_configuration["Jwt:ExpiryMinutes"]!)), // token akan expired dalam waktu 60 menit (lihat appsettings.json)
                     claims: authClaims,
                     signingCredentials: new SigningCredentials(
                         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)),

@@ -12,8 +12,8 @@ namespace RentCar.Models
 
         [MaxLength(2000)]
         public string Image_link { get; set; }
+        public string PublicId { get; set; }
 
-     
         [MaxLength(36)]
         public string Car_id { get; set; }
 

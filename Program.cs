@@ -123,6 +123,14 @@ builder.Services.AddCors(options =>
 });
 var app = builder.Build();
 
+// Baca PORT dari environment variable (untuk Railway)
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    app.Urls.Clear();
+    app.Urls.Add($"http://*:{port}");
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

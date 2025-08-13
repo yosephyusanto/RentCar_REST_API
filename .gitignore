@@ -3,3 +3,4 @@
 /obj/
 wwwroot/
 appsettings.json
+appsettings.Development.json

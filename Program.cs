@@ -67,9 +67,9 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// DbContext Injection
+// DbContext Injection (PostgreSql)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
 // Identity User for Authentication and Role Based Authorization
 builder.Services.AddIdentity<MsUser, IdentityRole>(options =>

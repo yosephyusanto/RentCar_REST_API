@@ -60,6 +60,11 @@ namespace RentCar.Controllers
                 {
                     return BadRequest("invalid date");
                 }
+
+                // jika menggunakan postgresql dan bukan SSMS perlu specify tipe DateTime:
+                pickupDate = DateTime.SpecifyKind(pickupDate, DateTimeKind.Utc);
+                returnDate = DateTime.SpecifyKind(returnDate, DateTimeKind.Utc);
+
                 query = query.Where(x => x.Rentals.All(r => returnDate < r.Rental_date.Date || pickupDate > r.Return_date.Date));
 
                 if(carYear != null) query = query.Where(x => x.Year == carYear);
@@ -128,6 +133,9 @@ namespace RentCar.Controllers
         {
             try
             {
+                pickupDate = DateTime.SpecifyKind(pickupDate, DateTimeKind.Utc);
+                returnDate = DateTime.SpecifyKind(returnDate, DateTimeKind.Utc);
+
                 var car = await _context.MsCars
                     .Include(x => x.Images)
                     .Where(x => x.Car_id == carId)

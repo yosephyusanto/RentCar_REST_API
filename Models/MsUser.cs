@@ -6,8 +6,8 @@ namespace RentCar.Models
     public class MsUser : IdentityUser
     {
         [MaxLength(200)]
-        public string FullName { get; set; }
+        public string FullName { get; set; } = string.Empty;
         [MaxLength(500)]
-        public string Address { get; set; }
+        public string Address { get; set; } = string.Empty;
     }
 }
